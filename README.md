@@ -1,5 +1,3 @@
-Sure, here's a high-level guide on how to set up and configure the script for Darktrace alerts:
-
 **Prerequisites**
 
 1. Ubuntu 20.04 or later.
