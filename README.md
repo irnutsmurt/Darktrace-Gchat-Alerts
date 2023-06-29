@@ -57,20 +57,20 @@ bash setup_darktrace_service.sh
 
 This will:
 
-- Create a new user called `idrgchatalert` with no login permissions.
+- Create a new user called `dtalerts` with no login permissions.
 - Set the proper permissions for the scripts and config file.
-- Set up a systemd service called `insightidr_alerts` that runs the Python script every minute.
+- Set up a systemd service called `dtgchatalerts.service` that runs the Python script every minute.
 
 6. Once the script is finished, you can start the service with the following command:
 
 ```bash
-sudo systemctl start insightidr_alerts
+sudo systemctl start dtgchatalerts
 ```
 
 7. To make the service run at startup, enable it:
 
 ```bash
-sudo systemctl enable insightidr_alerts
+sudo systemctl enable dtgchatalerts
 ```
 
 Now, the service should be pulling data from the Darktrace API every minute and sending any new alerts to Google Chat.
@@ -78,13 +78,13 @@ Now, the service should be pulling data from the Darktrace API every minute and 
 8. You can check the status of the service with:
 
 ```bash
-sudo systemctl status insightidr_alerts
+sudo systemctl status dtgchatalerts
 ```
 
 And check its logs with:
 
 ```bash
-journalctl -u insightidr_alerts.service
+journalctl -u dtgchatalerts.service
 ```
 
 That's it! Your service should now be set up and running.
