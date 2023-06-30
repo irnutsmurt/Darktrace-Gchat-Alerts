@@ -6,12 +6,45 @@ import time
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import json
+import os
+from datetime import datetime
+import shutil
+import gzip
+
+class CustomTimedRotatingFileHandler(TimedRotatingFileHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def doRollover(self):
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        current_time = time.time()
+        dt_now = datetime.fromtimestamp(current_time)
+        dfn = self.rotation_filename(self.baseFilename + "." + dt_now.strftime(self.suffix))
+        if os.path.exists(dfn):
+            os.remove(dfn)
+        directory = os.path.join('log', dt_now.strftime("%Y"), dt_now.strftime("%m"))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        moved_log_path = os.path.join(directory, 'dtalerts.log')
+        shutil.move(self.baseFilename, moved_log_path)
+        
+        # Compress the log file after it's moved
+        with open(moved_log_path, 'rb') as f_in:
+            with gzip.open(moved_log_path + '.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        os.remove(moved_log_path)  # remove the uncompressed log file
+
+        if not self.delay:
+            self.stream = self._open()
+
 
 # create a logging format
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # setup handler for file rotation
-file_handler = TimedRotatingFileHandler('debug.log', when="midnight", interval=1)
+file_handler = CustomTimedRotatingFileHandler('dtalerts.log', when="midnight", interval=1)
 file_handler.setFormatter(formatter)
 file_handler.suffix = "%m%d%Y"  # or whatever you want to keep as the filename suffix
 
@@ -42,6 +75,7 @@ sent_alerts_file = config['google_chat']['sent_alerts_file']
 def main():
     while True:
         print("Fetching raw alerts from Darktrace...")
+        logger.info("Fetching raw alerts from Darktrace...")
         # get the list of raw alerts from Darktrace
         raw_alerts = get_raw_alerts()
         if raw_alerts is not None:
@@ -53,8 +87,10 @@ def main():
 
             if new_raw_alerts:
                 print(f"{len(new_raw_alerts)} raw alerts to parse and send.")
-
+                logger.info(f"{len(new_raw_alerts)} raw alerts to parse and send.")
+                
                 print("Parsing raw alerts...")
+                logger.info("Parsing raw alerts...")
                 # parse the new raw alerts and save to file
                 parsed_alerts = parse_raw_alerts(new_raw_alerts, parsed_alerts_file)
 
@@ -69,6 +105,7 @@ def main():
 
             else:
                 print("No new raw alerts to parse.")
+                logger.info("No new raw alerts to parse.")
 
         # wait for 1 minute before fetching new alerts
         print("Waiting for 1 minute before fetching new alerts...")
